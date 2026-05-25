@@ -1,0 +1,20 @@
+{
+  "model_type": "hybrid_deepfake",
+  "architectures": ["HybridDeepfakeForVideoClassification"],
+  "auto_map": {
+    "AutoConfig": "configuration_hybrid_deepfake.HybridDeepfakeConfig",
+    "AutoModel": "modeling_hybrid_deepfake.HybridDeepfakeForVideoClassification"
+  },
+  "architecture": "saff",
+  "visual_dim": 512,
+  "audio_dim": 128,
+  "hidden_dim": 256,
+  "num_heads": 4,
+  "num_layers": 2,
+  "num_frames": 32,
+  "num_classes": 2,
+  "dropout": 0.1,
+  "sync_weight": 0.5,
+  "id2label": {"0": "real", "1": "fake"},
+  "label2id": {"real": 0, "fake": 1}
+}
