@@ -23,13 +23,39 @@ that hybrid multi-modal frameworks, which exploit cross-channel consistency
 between audio and video, outperform single-modal detectors on the harder
 benchmarks (DFDC, FakeAVCeleb, AV-Deepfake1M).
 
-This repository ships **two interchangeable architectures** behind one Hugging
+This repository ships **three interchangeable architectures** behind one Hugging
 Face model class, selectable through the config `architecture` field:
 
 | `architecture` | Description | Review paradigm |
 |----------------|-------------|-----------------|
-| `saff`         | Synchronisation-Aware Feature Fusion. Audio and visual token sequences attend to each other through cross-modal attention; an explicit audio-visual synchronisation score feeds the classifier. | Hybrid multi-modal (intermediate fusion) |
+| `saff_plus`    | **The strongest architecture (default).** Modality-specific transformer self-attention encoders with learnable CLS tokens, stacked bidirectional cross-modal attention, a Cross-Modal Graph Attention layer (CM-GAN style), an offset-tolerant soft synchronisation module, an auxiliary cross-modal temporal prediction task, a frame-level manipulation localisation head, and modality gating. | Hybrid multi-modal, multi-task |
+| `saff`         | Synchronisation-Aware Feature Fusion. Audio and visual token sequences attend to each other through cross-modal attention; a frame-aligned synchronisation score feeds the classifier. | Hybrid multi-modal (intermediate fusion) |
 | `late_fusion`  | Independent audio and visual temporal encoders, combined by a learned decision-level weight. | Single-modal-style baseline (late fusion) |
+
+### Why `saff_plus` is stronger
+
+It folds the strongest ideas from the systems the review ranked highest into one
+design:
+
+- **Deeper fusion**: modality-specific transformer encoders feed several stacked
+  bidirectional cross-modal attention blocks, instead of a single shallow fusion.
+- **Graph attention (CM-GAN)**: a graph-attention layer reasons over visual and
+  audio summary nodes, the relational mechanism behind the top-performing SAFF
+  system in the review.
+- **Offset-tolerant synchronisation**: a soft audio-visual alignment over the
+  full time grid catches partial desynchronisation, not just frame-aligned
+  mismatches.
+- **Self-supervised auxiliary task**: cross-modal temporal feature prediction
+  (predict one modality from the other), which the review links to better
+  cross-dataset transfer.
+- **Frame-level localisation**: a per-frame head identifies *which* segments are
+  manipulated, not just whether the clip is fake.
+- **Modality gating**: a learned gate down-weights an unreliable or missing
+  modality for graceful degradation.
+
+The model is multi-task: the training loss combines classification, a
+synchronisation regulariser, the cross-modal prediction loss, and (when
+frame-level labels are supplied) a localisation loss.
 
 > This is a **runnable reference implementation**, not a model trained on real
 > deepfake corpora. Weights are randomly initialised. `demo.py` runs the full
@@ -70,8 +96,9 @@ audio = torch.randn(B, T, config.audio_dim)
 with torch.no_grad():
     out = model(visual_features=visual, audio_features=audio)
 
-print(out.probs)        # P(real), P(fake)
-print(out.sync_score)   # audio-visual synchronisation (SAFF only)
+print(out.probs)         # P(real), P(fake)
+print(out.sync_score)    # audio-visual synchronisation (saff and saff_plus)
+print(out.frame_logits)  # per-frame manipulation logits (saff_plus only)
 ```
 
 ### Switch architecture
@@ -80,7 +107,7 @@ print(out.sync_score)   # audio-visual synchronisation (SAFF only)
 from configuration_hybrid_deepfake import HybridDeepfakeConfig
 from modeling_hybrid_deepfake import HybridDeepfakeForVideoClassification
 
-cfg = HybridDeepfakeConfig(architecture="late_fusion")   # or "saff"
+cfg = HybridDeepfakeConfig(architecture="saff_plus")   # or "saff" or "late_fusion"
 model = HybridDeepfakeForVideoClassification(cfg)
 ```
 

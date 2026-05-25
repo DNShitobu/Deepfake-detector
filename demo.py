@@ -66,8 +66,12 @@ def run(architecture):
             out = model(visual_features=v, audio_features=a)
         real_p, fake_p = out.probs[0].tolist()
         sync = None if out.sync_score is None else float(out.sync_score[0])
-        sync_str = "" if sync is None else f" | sync_score={sync:+.3f}"
-        print(f"  {label:26s} -> P(real)={real_p:.3f}  P(fake)={fake_p:.3f}{sync_str}")
+        sync_str = "" if sync is None else f" | sync={sync:+.3f}"
+        loc_str = ""
+        if out.frame_logits is not None:
+            n_flagged = int((out.frame_logits[0] > 0).sum())
+            loc_str = f" | frames flagged={n_flagged}/{out.frame_logits.size(1)}"
+        print(f"  {label:26s} -> P(real)={real_p:.3f}  P(fake)={fake_p:.3f}{sync_str}{loc_str}")
 
     print("  note: weights are random, so the verdicts are illustrative only.")
     print("        train.py shows how to fit the model on labelled data.")
@@ -75,6 +79,7 @@ def run(architecture):
 
 if __name__ == "__main__":
     torch.manual_seed(0)
+    run("saff_plus")
     run("saff")
     run("late_fusion")
-    print("\nPipeline ran end-to-end. Both architectures produced valid outputs.")
+    print("\nPipeline ran end-to-end. All three architectures produced valid outputs.")

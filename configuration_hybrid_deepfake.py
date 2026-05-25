@@ -21,7 +21,7 @@ class HybridDeepfakeConfig(PretrainedConfig):
 
     def __init__(
         self,
-        architecture: str = "saff",
+        architecture: str = "saff_plus",
         visual_dim: int = 512,
         audio_dim: int = 128,
         hidden_dim: int = 256,
@@ -31,11 +31,13 @@ class HybridDeepfakeConfig(PretrainedConfig):
         num_classes: int = 2,
         dropout: float = 0.1,
         sync_weight: float = 0.5,
+        pred_weight: float = 0.2,
+        loc_weight: float = 0.5,
         **kwargs,
     ):
-        if architecture not in ("saff", "late_fusion"):
+        if architecture not in ("saff_plus", "saff", "late_fusion"):
             raise ValueError(
-                f"architecture must be 'saff' or 'late_fusion', got {architecture!r}"
+                f"architecture must be 'saff_plus', 'saff', or 'late_fusion', got {architecture!r}"
             )
         self.architecture = architecture
         self.visual_dim = visual_dim
@@ -46,5 +48,7 @@ class HybridDeepfakeConfig(PretrainedConfig):
         self.num_frames = num_frames
         self.num_classes = num_classes
         self.dropout = dropout
-        self.sync_weight = sync_weight
+        self.sync_weight = sync_weight       # weight of the synchronisation regulariser
+        self.pred_weight = pred_weight       # weight of the cross-modal temporal prediction loss (saff_plus)
+        self.loc_weight = loc_weight         # weight of the frame-level localisation loss (saff_plus)
         super().__init__(**kwargs)

@@ -64,7 +64,7 @@ def collate(batch):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--architecture", choices=["saff", "late_fusion"], default="saff")
+    ap.add_argument("--architecture", choices=["saff_plus", "saff", "late_fusion"], default="saff_plus")
     ap.add_argument("--steps", type=int, default=100)
     ap.add_argument("--batch_size", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-3)
